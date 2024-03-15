@@ -1,0 +1,17 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description:
+  Lambda function to get CSV data from NYC Open Data API and save to S3 Bucket
+Globals:
+  Function:
+    Timeout: 300
+    MemorySize: 512
+Resources:
+  MainFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: app.extract
+      Runtime: python3.10
+      Architectures:
+      - x86_64
