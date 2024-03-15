@@ -63,3 +63,36 @@ class Extract:
         except RequestException as e:
             print(e)
             raise
+
+    def save_csv_data(self, data: ByteString, file_path: str) -> int:
+        """Saves CSV data to the local file system.
+
+        Args:
+            data (ByteString): ByteString containing CSV data.
+            file_path (str): The path and filename to be written to.
+
+        Returns:
+            int: Number of rows in CSV file.  Used to determine offset for paginated API requests.
+        """
+        row_count = 0
+        try:
+            self._file = open(file_path, 'w', encoding='UTF-8')
+            decoded = data.decode('UTF-8')
+            writer = csv.writer(self._file, quotechar='"', quoting=csv.QUOTE_ALL)
+            reader = csv.reader(decoded.splitlines(), delimiter=',', quoting=csv.QUOTE_ALL)
+            field_names = next(reader, None)
+
+            if self._write_headers:
+                writer.writerow(field_names)
+                self._write_headers = False
+
+            for row in reader:
+                writer.writerow(row)
+                row_count += 1
+
+            return row_count
+
+        except FileNotFoundError as e:
+            print(e)
+        except IOError as e:
+            print(e)
