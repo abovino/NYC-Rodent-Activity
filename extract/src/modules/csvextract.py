@@ -26,8 +26,8 @@ class Extract:
         url: str,
         token: str,
         date: str,
-        limit=50000,
-        offset=0,
+        limit: int,
+        offset: int,
         timeout=10,
         retries=3
     ) -> ByteString:

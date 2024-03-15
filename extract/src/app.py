@@ -14,8 +14,16 @@ def extract(event, context):
     API_TOKEN = event['API_TOKEN']
     BASE_URL = f'https://data.cityofnewyork.us/resource/{API_RESOURCE_CODE}.csv?'
     with Extract() as client:
-        data = client.fetch_csv_data(BASE_URL, API_TOKEN, QUERY_DATE)
-        row_count = client.save_csv_data(data, f'./tmp/{QUERY_DATE}.csv')
+        limit = event['QUERY_LIMIT'] or 50000
+        offset = 0
+        while True:
+            data = client.fetch_csv_data(BASE_URL, API_TOKEN, QUERY_DATE, limit, offset)
+            row_count = client.save_csv_data(data, f'./tmp/{QUERY_DATE}.csv')
+
+            if row_count < limit:
+                break
+
+            offset += limit
 
     return data
 
