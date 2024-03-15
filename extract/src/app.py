@@ -15,6 +15,7 @@ def extract(event, context):
     BASE_URL = f'https://data.cityofnewyork.us/resource/{API_RESOURCE_CODE}.csv?'
     with Extract() as client:
         data = client.fetch_csv_data(BASE_URL, API_TOKEN, QUERY_DATE)
+        row_count = client.save_csv_data(data, f'./tmp/{QUERY_DATE}.csv')
 
     return data
 
