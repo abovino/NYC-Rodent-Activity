@@ -7,3 +7,7 @@ ENV/
 env.bak/
 venv.bak/
 env.json
+
+# Track tmp/ but ignore contents
+tmp/*
+!tmp/.gitkeep
