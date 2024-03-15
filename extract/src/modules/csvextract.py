@@ -65,6 +65,15 @@ class Extract:
             raise
 
     def save_csv_data(self, data: ByteString, file_path: str) -> int:
+        """Saves CSV data to the local file system.
+
+        Args:
+            data (ByteString): ByteString containing CSV data.
+            file_path (str): The path and filename to be written to.
+
+        Returns:
+            int: Number of rows in CSV file.  Used to determine offset for paginated API requests.
+        """
         row_count = 0
         try:
             self._file = open(file_path, 'w', encoding='UTF-8')
