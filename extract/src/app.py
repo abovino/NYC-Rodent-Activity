@@ -1,8 +1,14 @@
 import json
 
 from modules.csvextract import Extract
+from modules.eventkeyvalidation import validate_keys
 
 def extract(event, context):
+    err_response = validate_keys(event)
+
+    if err_response:
+        return err_response
+
     API_RESOURCE_CODE = event['API_RESOURCE_CODE']
     QUERY_DATE = event['QUERY_DATE']
     API_TOKEN = event['API_TOKEN']
