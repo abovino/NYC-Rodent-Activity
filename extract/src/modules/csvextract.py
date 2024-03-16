@@ -8,16 +8,17 @@ from requests.exceptions import RequestException
 
 
 class Extract:
-    def __init__(self):
+    def __init__(self, query_date):
         self._write_headers = True
-        self._file = None
+        self._query_date = query_date
 
     def __enter__(self):
-        self.session = Session()
+        self._session = Session()
+        self._file = open(f'./tmp/{self._query_date}.csv', 'w', encoding='UTF-8')
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.session.close()
+        self._session.close()
         if self._file:
             self._file.close()
 
@@ -25,15 +26,14 @@ class Extract:
         self,
         url: str,
         token: str,
-        date: str,
-        limit=50000,
-        offset=0,
+        limit: int,
+        offset: int,
         timeout=10,
         retries=3
     ) -> ByteString:
         cols = '*,:id,:created_at,:updated_at,:version'
         headers = {'X-App-Token': token}
-        start = date
+        start = self._query_date
         end = (datetime.strptime(start, '%Y-%m-%d')
             + timedelta(days=1)).strftime('%Y-%m-%d')
         where = (
@@ -55,11 +55,43 @@ class Extract:
             raise_on_status=False
         )
         api_adapter = HTTPAdapter(max_retries=retry_strategy)
-        self.session.mount('https://', api_adapter)
+        self._session.mount('https://', api_adapter)
         try:
-            response = self.session.get(url, params=params, headers=headers, timeout=timeout)
+            response = self._session.get(url, params=params, headers=headers, timeout=timeout)
             response.raise_for_status()
             return response.content
         except RequestException as e:
             print(e)
             raise
+
+    def save_csv_data(self, data: ByteString) -> int:
+        """Saves CSV data to the local file system.
+
+        Args:
+            data (ByteString): ByteString containing CSV data.
+            file_path (str): The path and filename to be written to.
+
+        Returns:
+            int: Number of rows in CSV file.  Used to determine offset for paginated API requests.
+        """
+        row_count = 0
+        try:
+            decoded = data.decode('UTF-8')
+            writer = csv.writer(self._file, quotechar='"', quoting=csv.QUOTE_ALL)
+            reader = csv.reader(decoded.splitlines(), delimiter=',', quoting=csv.QUOTE_ALL)
+            field_names = next(reader, None)
+
+            if self._write_headers:
+                writer.writerow(field_names)
+                self._write_headers = False
+
+            for row in reader:
+                writer.writerow(row)
+                row_count += 1
+
+            return row_count
+
+        except FileNotFoundError as e:
+            print(e)
+        except IOError as e:
+            print(e)
