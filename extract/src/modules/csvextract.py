@@ -8,16 +8,17 @@ from requests.exceptions import RequestException
 
 
 class Extract:
-    def __init__(self):
+    def __init__(self, query_date):
         self._write_headers = True
-        self._file = None
+        self._query_date = query_date
 
     def __enter__(self):
-        self.session = Session()
+        self._session = Session()
+        self._file = open(f'./tmp/{self._query_date}.csv', 'w', encoding='UTF-8')
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.session.close()
+        self._session.close()
         if self._file:
             self._file.close()
 
@@ -25,7 +26,6 @@ class Extract:
         self,
         url: str,
         token: str,
-        date: str,
         limit: int,
         offset: int,
         timeout=10,
@@ -33,7 +33,7 @@ class Extract:
     ) -> ByteString:
         cols = '*,:id,:created_at,:updated_at,:version'
         headers = {'X-App-Token': token}
-        start = date
+        start = self._query_date
         end = (datetime.strptime(start, '%Y-%m-%d')
             + timedelta(days=1)).strftime('%Y-%m-%d')
         where = (
@@ -55,16 +55,16 @@ class Extract:
             raise_on_status=False
         )
         api_adapter = HTTPAdapter(max_retries=retry_strategy)
-        self.session.mount('https://', api_adapter)
+        self._session.mount('https://', api_adapter)
         try:
-            response = self.session.get(url, params=params, headers=headers, timeout=timeout)
+            response = self._session.get(url, params=params, headers=headers, timeout=timeout)
             response.raise_for_status()
             return response.content
         except RequestException as e:
             print(e)
             raise
 
-    def save_csv_data(self, data: ByteString, file_path: str) -> int:
+    def save_csv_data(self, data: ByteString) -> int:
         """Saves CSV data to the local file system.
 
         Args:
@@ -76,7 +76,6 @@ class Extract:
         """
         row_count = 0
         try:
-            self._file = open(file_path, 'w', encoding='UTF-8')
             decoded = data.decode('UTF-8')
             writer = csv.writer(self._file, quotechar='"', quoting=csv.QUOTE_ALL)
             reader = csv.reader(decoded.splitlines(), delimiter=',', quoting=csv.QUOTE_ALL)
