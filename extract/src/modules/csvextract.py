@@ -1,3 +1,9 @@
+"""
+Contains a class to handle data extract from NYC Open Data API
+
+Classes:
+    Extract: Handles paginated API requests, and stages file in local tmp directory
+"""
 import csv
 from datetime import datetime, timedelta
 from typing import ByteString
@@ -8,6 +14,14 @@ from requests.exceptions import RequestException
 
 
 class Extract:
+    """Handles paginated API requests, and stages file in local tmp directory
+
+    Attributes:
+        _write_headers (bool): If the CSV headers should be written to the file.
+        _query_date (str): Date to request data for.  ISO Format YYYY-MM-DD.
+        _session (Session): Persists the connection to the API
+        _file (IO[str]): Open file for writing
+    """
     def __init__(self, query_date):
         self._write_headers = True
         self._query_date = query_date
@@ -31,6 +45,19 @@ class Extract:
         timeout=10,
         retries=3
     ) -> ByteString:
+        """Sends GET request to download data for given date.
+
+        Args:
+            url (str): Base URL for API.
+            token (str): Authentication token.
+            limit (int): Max number of rows returned for each request.
+            offset (int): Used to paginate the requests.
+            timeout (int, optional): Time in seconds for the connection to timeout. Defaults to 10.
+            retries (int, optional): Number of retry requests to attempt. Defaults to 3.
+
+        Returns:
+            ByteString: A byte string of CSV data.
+        """
         cols = '*,:id,:created_at,:updated_at,:version'
         headers = {'X-App-Token': token}
         start = self._query_date
