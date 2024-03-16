@@ -4,5 +4,5 @@
     "API_TOKEN": "<TOKEN>",
     "S3_BUCKET": "<BUCKET NAME>",
     "S3_REGION": "<AWS REGION>",
-    "S3_OBJ_PATH": "<S3/OBJ_KEY/PATH/"
+    "S3_OBJ_PATH": "<S3/OBJ_KEY/PATH"
 }
