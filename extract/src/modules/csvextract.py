@@ -5,9 +5,12 @@ Classes:
     Extract: Handles paginated API requests, and stages file in local tmp directory
 """
 import csv
+import os
 from datetime import datetime, timedelta
 from typing import ByteString
 
+import boto3
+from botocore.config import Config
 from requests import Session
 from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import RequestException
@@ -28,7 +31,7 @@ class Extract:
 
     def __enter__(self):
         self._session = Session()
-        self._file = open(f'./tmp/{self._query_date}.csv', 'w', encoding='UTF-8')
+        self._file = open(f'./tmp/{self._query_date}.csv', 'w+', encoding='UTF-8')
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -121,4 +124,24 @@ class Extract:
         except FileNotFoundError as e:
             print(e)
         except IOError as e:
+            print(e)
+
+    def upload_to_s3(self, region, bucket, obj_dir):
+        self._file.seek(0)
+        contents = self._file.read()
+        file_nm = os.path.basename(self._file.name)
+        obj_key = f'{obj_dir}/{file_nm}'
+        retry_strategy = {
+            'total_max_attempts': 3,
+            'mode': 'standard',
+        }
+        config = Config(
+            region_name=region,
+            retries=retry_strategy
+        )            
+        try:
+            client = boto3.client('s3', config=config)
+            response = client.put_object(Body=contents, Bucket=bucket, Key=obj_key)
+            return response
+        except Exception as e:
             print(e)
