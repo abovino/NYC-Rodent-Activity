@@ -1,9 +1,20 @@
+"""AWS Lambda function to get CSV data from NYC Open Data API and upload to S3 Bucket"""
 import json
+from typing import Dict, Any
 
 from modules.csvextract import Extract
 from modules.eventkeyvalidation import validate_keys
 
-def extract(event, context):
+def extract(event, context) -> Dict[str, Any]:
+    """AWS Lambda function entry point.
+
+    Args:
+        event (dict): Contains parameters for making API request.
+        context (dict): Provides info about invocation, function, and execution environment
+
+    Returns:
+        Dict[str, Any]: Returns a JSON-like dict with str key and Any value.
+    """
     err_response = validate_keys(event)
 
     if err_response:
