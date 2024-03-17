@@ -5,9 +5,13 @@ Classes:
     Extract: Handles paginated API requests, and stages file in local tmp directory
 """
 import csv
+import os
 from datetime import datetime, timedelta
 from typing import ByteString
 
+import boto3
+from botocore.config import Config
+from botocore.exceptions import ClientError
 from requests import Session
 from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import RequestException
@@ -28,13 +32,12 @@ class Extract:
 
     def __enter__(self):
         self._session = Session()
-        self._file = open(f'./tmp/{self._query_date}.csv', 'w', encoding='UTF-8')
+        self._file = open(f'./tmp/{self._query_date}.csv', 'w+', encoding='UTF-8')
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self._session.close()
-        if self._file:
-            self._file.close()
+        self._file.close()
 
     def fetch_csv_data(
         self,
@@ -122,3 +125,60 @@ class Extract:
             print(e)
         except IOError as e:
             print(e)
+
+    def upload_to_s3(self, region: str, bucket: str, obj_dir: str) -> dict:
+        """Uploads CSV data to S3 bucket.
+
+        Args:
+            region (str): AWS region for S3 bucket.
+            bucket (str): S3 bucket upload destination.
+            obj_dir (str): Obj key path for upload
+
+        Returns:
+            dict: Contains respose data from S3, or error data in JSON format
+        """
+        self._file.seek(0)
+        contents = self._file.read()
+        file_nm = os.path.basename(self._file.name)
+        obj_key = f'{obj_dir}/{file_nm}'
+        retry_strategy = {'total_max_attempts': 3, 'mode': 'standard'}
+        config = Config(region_name=region, retries=retry_strategy)
+
+        try:
+            client = boto3.client('s3', config=config)
+            response = client.put_object(Body=contents, Bucket=bucket, Key=obj_key)
+
+            status_code = response['ResponseMetadata']['HTTPStatusCode']
+            response_body = {'message': 'File uploaded successfully'}
+            response = self._format_lambda_response(status_code, response_body)
+
+            return response
+        except ClientError as e:
+            response_body = {'error': e.response['Error']['Message']}
+            err_response = {
+                'statusCode': e.response['ResponseMetadata']['HTTPStatusCode'],
+                'headers': {
+                    'Content-Type': 'application/json'
+                },
+                'body': response_body
+            }
+            return err_response
+
+    def _format_lambda_response(self, status_code: int, body: dict) -> dict:
+        """Formats the response for the AWS Lambda Function.
+
+        Args:
+            status_code (int): Status code to send to the client.
+            body (dict): Response body to send to the client.
+
+        Returns:
+            dict: HTTP status code, headers, and body
+        """
+        res = {
+            'statusCode': status_code,
+            'headers': {
+                'Content-Type': 'applicatbuildion/json',
+            },
+            'body': body
+        }
+        return res

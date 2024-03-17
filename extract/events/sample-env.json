@@ -1,5 +1,8 @@
 {
     "API_RESOURCE_CODE": "<API_RESOURCE_CODE>",
     "QUERY_DATE": "YYYY-MM-DD",
-    "API_TOKEN": "<TOKEN>"
+    "API_TOKEN": "<TOKEN>",
+    "S3_BUCKET": "<BUCKET NAME>",
+    "S3_REGION": "<AWS REGION>",
+    "S3_OBJ_PATH": "<S3/OBJ_KEY/PATH"
 }

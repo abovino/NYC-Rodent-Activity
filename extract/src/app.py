@@ -23,7 +23,11 @@ def extract(event, context) -> Dict[str, Any]:
     API_RESOURCE_CODE = event['API_RESOURCE_CODE']
     QUERY_DATE = event['QUERY_DATE']
     API_TOKEN = event['API_TOKEN']
+    S3_BUCKET = event['S3_BUCKET']
+    S3_REGION = event['S3_REGION']
+    S3_OBJ_PATH = event['S3_OBJ_PATH']
     BASE_URL = f'https://data.cityofnewyork.us/resource/{API_RESOURCE_CODE}.csv?'
+
     with Extract(QUERY_DATE) as client:
         limit = 50000
         offset = 0
@@ -36,7 +40,9 @@ def extract(event, context) -> Dict[str, Any]:
 
             offset += limit
 
-    return data
+        s3_response = client.upload_to_s3(S3_REGION, S3_BUCKET, S3_OBJ_PATH)
+
+        return json.dumps(s3_response)
 
 if __name__ == '__main__':
     with open('./extract/events/env.json', 'r', encoding='UTF-8') as f:
