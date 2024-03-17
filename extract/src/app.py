@@ -42,7 +42,7 @@ def extract(event, context) -> Dict[str, Any]:
 
         s3_response = client.upload_to_s3(S3_REGION, S3_BUCKET, S3_OBJ_PATH)
 
-        return s3_response
+        return json.dumps(s3_response)
 
 if __name__ == '__main__':
     with open('./extract/events/env.json', 'r', encoding='UTF-8') as f:
