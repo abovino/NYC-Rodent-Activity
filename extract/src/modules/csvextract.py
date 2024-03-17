@@ -5,21 +5,13 @@ Classes:
     Extract: Handles paginated API requests, and stages file in local tmp directory
 """
 import csv
-import json
 import os
 from datetime import datetime, timedelta
 from typing import ByteString
 
 import boto3
 from botocore.config import Config
-from botocore.exceptions import (
-    ClientError,
-    PartialCredentialsError,
-    NoCredentialsError,
-    EndpointConnectionError,
-    ParamValidationError,
-    ConnectTimeoutError
-)
+from botocore.exceptions import ClientError
 from requests import Session
 from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import RequestException
@@ -155,23 +147,38 @@ class Extract:
         try:
             client = boto3.client('s3', config=config)
             response = client.put_object(Body=contents, Bucket=bucket, Key=obj_key)
-            return response.ResponseMetadata
+
+            status_code = response['ResponseMetadata']['HTTPStatusCode']
+            response_body = {'message': 'File uploaded successfully'}
+            response = self._format_lambda_response(status_code, response_body)
+
+            return response
         except ClientError as e:
-            status_code = e.response['ResponseMetadata']['HTTPStatusCode']
-            msg = e.response['Error']['Message']
-            return {'statusCode': status_code, 'body': json.dumps({'error': msg})}
-        except Exception as e:
-            return self._handle_s3_exception(e)
+            response_body = {'error': e.response['Error']['Message']}
+            err_response = {
+                'statusCode': e.response['ResponseMetadata']['HTTPStatusCode'],
+                'headers': {
+                    'Content-Type': 'application/json'
+                },
+                'body': response_body
+            }
+            return err_response
 
-    def _handle_s3_exception(self, exception):
-        exceptions_to_status = {
-            (PartialCredentialsError, NoCredentialsError): 401,
-            (EndpointConnectionError, ParamValidationError): 400,
-            ConnectTimeoutError: 408
+    def _format_lambda_response(self, status_code: int, body: dict) -> dict:
+        """Formats the response for the AWS Lambda Function.
+
+        Args:
+            status_code (int): Status code to send to the client.
+            body (dict): Response body to send to the client.
+
+        Returns:
+            dict: HTTP status code, headers, and body
+        """
+        res = {
+            'statusCode': status_code,
+            'headers': {
+                'Content-Type': 'applicatbuildion/json',
+            },
+            'body': body
         }
-
-        for exception_types, status_code in exceptions_to_status.items():
-            if isinstance(exception, exception_types):
-                return {'statusCode': status_code, 'body': json.dumps({'error': str(exception)})}
-
-        raise exception
+        return res
