@@ -36,8 +36,7 @@ class Extract:
 
     def __exit__(self, exc_type, exc_value, traceback):
         self._session.close()
-        if self._file:
-            self._file.close()
+        self._file.close()
 
     def fetch_csv_data(
         self,
