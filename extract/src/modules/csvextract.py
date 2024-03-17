@@ -5,12 +5,21 @@ Classes:
     Extract: Handles paginated API requests, and stages file in local tmp directory
 """
 import csv
+import json
 import os
 from datetime import datetime, timedelta
 from typing import ByteString
 
 import boto3
 from botocore.config import Config
+from botocore.exceptions import (
+    ClientError,
+    PartialCredentialsError,
+    NoCredentialsError,
+    EndpointConnectionError,
+    ParamValidationError,
+    ConnectTimeoutError
+)
 from requests import Session
 from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import RequestException
@@ -125,22 +134,44 @@ class Extract:
         except IOError as e:
             print(e)
 
-    def upload_to_s3(self, region, bucket, obj_dir):
+    def upload_to_s3(self, region: str, bucket: str, obj_dir: str) -> dict:
+        """Uploads CSV data to S3 bucket.
+
+        Args:
+            region (str): AWS region for S3 bucket.
+            bucket (str): S3 bucket upload destination.
+            obj_dir (str): Obj key path for upload
+
+        Returns:
+            dict: Contains respose data from S3, or error data in JSON format
+        """
         self._file.seek(0)
         contents = self._file.read()
         file_nm = os.path.basename(self._file.name)
         obj_key = f'{obj_dir}/{file_nm}'
-        retry_strategy = {
-            'total_max_attempts': 3,
-            'mode': 'standard',
-        }
-        config = Config(
-            region_name=region,
-            retries=retry_strategy
-        )            
+        retry_strategy = {'total_max_attempts': 3, 'mode': 'standard'}
+        config = Config(region_name=region, retries=retry_strategy)
+
         try:
             client = boto3.client('s3', config=config)
             response = client.put_object(Body=contents, Bucket=bucket, Key=obj_key)
-            return response
+            return response.ResponseMetadata
+        except ClientError as e:
+            status_code = e.response['ResponseMetadata']['HTTPStatusCode']
+            msg = e.response['Error']['Message']
+            return {'statusCode': status_code, 'body': json.dumps({'error': msg})}
         except Exception as e:
-            print(e)
+            return self._handle_s3_exception(e)
+
+    def _handle_s3_exception(self, exception):
+        exceptions_to_status = {
+            (PartialCredentialsError, NoCredentialsError): 401,
+            (EndpointConnectionError, ParamValidationError): 400,
+            ConnectTimeoutError: 408
+        }
+
+        for exception_types, status_code in exceptions_to_status.items():
+            if isinstance(exception, exception_types):
+                return {'statusCode': status_code, 'body': json.dumps({'error': str(exception)})}
+
+        raise exception
