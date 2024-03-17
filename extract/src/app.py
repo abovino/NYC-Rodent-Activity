@@ -27,7 +27,7 @@ def extract(event, context) -> Dict[str, Any]:
     S3_REGION = event['S3_REGION']
     S3_OBJ_PATH = event['S3_OBJ_PATH']
     BASE_URL = f'https://data.cityofnewyork.us/resource/{API_RESOURCE_CODE}.csv?'
-    
+
     with Extract(QUERY_DATE) as client:
         limit = 50000
         offset = 0
