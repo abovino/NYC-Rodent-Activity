@@ -174,7 +174,7 @@ class Extract:
         res = {
             'statusCode': status_code,
             'headers': {
-                'Content-Type': 'applicatbuildion/json',
+                'Content-Type': 'application/json',
             },
             'body': body
         }
