@@ -8,6 +8,9 @@ env.bak/
 venv.bak/
 env.json
 
+# AWS SAM Builds
+.aws-sam/
+
 # Byte compiled / optimized / DLL files
 __pycache__/
 
