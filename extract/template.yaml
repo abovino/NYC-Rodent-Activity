@@ -7,7 +7,7 @@ Globals:
     Timeout: 300
     MemorySize: 512
 Resources:
-  MainFunction:
+  ExtractCSVData:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: src/
@@ -15,3 +15,10 @@ Resources:
       Runtime: python3.10
       Architectures:
       - x86_64
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Sub ${S3DestBucket}
+
+Parameters:
+  S3DestBucket:
+    Type: String

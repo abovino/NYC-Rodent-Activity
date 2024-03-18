@@ -156,14 +156,9 @@ class Extract:
 
             return response
         except ClientError as e:
+            status_code = e.response['ResponseMetadata']['HTTPStatusCode']
             response_body = {'error': e.response['Error']['Message']}
-            err_response = {
-                'statusCode': e.response['ResponseMetadata']['HTTPStatusCode'],
-                'headers': {
-                    'Content-Type': 'application/json'
-                },
-                'body': response_body
-            }
+            err_response = self._format_lambda_response(status_code, response_body)
             return err_response
 
     def _format_lambda_response(self, status_code: int, body: dict) -> dict:

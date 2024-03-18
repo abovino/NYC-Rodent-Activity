@@ -5,4 +5,5 @@
     sam deploy --stack-name stack-name \
     --s3-bucket dest-bucket \
     --s3-prefix bucket/dir \
-    --capabilities CAPABILITY_IAM
+    --capabilities CAPABILITY_IAM \
+    --parameter-overrides S3DestBucket=bucket-name
