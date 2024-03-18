@@ -26,13 +26,15 @@ class Extract:
         _session (Session): Persists the connection to the API
         _file (IO[str]): Open file for writing
     """
-    def __init__(self, query_date):
+    def __init__(self, query_date, tmp_dir):
         self._write_headers = True
         self._query_date = query_date
+        self._tmp_dir = tmp_dir
+        self._tmp_output = os.path.join(self._tmp_dir, f'{self._query_date}.csv')
 
     def __enter__(self):
         self._session = Session()
-        self._file = open(f'./tmp/{self._query_date}.csv', 'w+', encoding='UTF-8')
+        self._file = open(self._tmp_output, 'w+', encoding='UTF-8')
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
