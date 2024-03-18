@@ -6,7 +6,6 @@ Classes:
 """
 import csv
 import os
-import traceback
 from datetime import datetime, timedelta
 from typing import ByteString
 
@@ -157,12 +156,8 @@ class Extract:
 
             return response
         except ClientError as e:
-            stack_trace = traceback.format_exc()
             status_code = e.response['ResponseMetadata']['HTTPStatusCode']
-            response_body = {
-                'error': e.response['Error']['Message'],
-                'trace': stack_trace
-            }
+            response_body = {'error': e.response['Error']['Message']}
             err_response = self._format_lambda_response(status_code, response_body)
             return err_response
 
