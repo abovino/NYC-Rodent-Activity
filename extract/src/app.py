@@ -1,9 +1,12 @@
 """AWS Lambda function to get CSV data from NYC Open Data API and upload to S3 Bucket"""
+import os
 import json
 from typing import Dict, Any
 
 from modules.csvextract import Extract
 from modules.eventkeyvalidation import validate_keys
+
+TMP_DIR = os.environ['TMP_DIR']
 
 def extract(event, context) -> Dict[str, Any]:
     """AWS Lambda function entry point.
@@ -28,7 +31,7 @@ def extract(event, context) -> Dict[str, Any]:
     S3_OBJ_PATH = event['S3_OBJ_PATH']
     BASE_URL = f'https://data.cityofnewyork.us/resource/{API_RESOURCE_CODE}.csv?'
 
-    with Extract(QUERY_DATE) as client:
+    with Extract(QUERY_DATE, TMP_DIR) as client:
         limit = 50000
         offset = 0
         while True:
