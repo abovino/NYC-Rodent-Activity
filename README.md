@@ -7,3 +7,5 @@
     --s3-prefix bucket/dir \
     --capabilities CAPABILITY_IAM \
     --parameter-overrides S3DestBucket=bucket-name
+
+    aws lambda invoke --function-name <lambda-func-name> --payload fileb://path/to/payload.json response.json

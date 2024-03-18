@@ -1,14 +1,13 @@
 """AWS Lambda function to get CSV data from NYC Open Data API and upload to S3 Bucket"""
 import os
 import json
-from typing import Dict, Any
 
 from modules.csvextract import Extract
 from modules.eventkeyvalidation import validate_keys
 
 TMP_DIR = os.environ['TMP_DIR']
 
-def extract(event, context) -> Dict[str, Any]:
+def extract(event, context) -> dict:
     """AWS Lambda function entry point.
 
     Args:
@@ -45,7 +44,7 @@ def extract(event, context) -> Dict[str, Any]:
 
         s3_response = client.upload_to_s3(S3_REGION, S3_BUCKET, S3_OBJ_PATH)
 
-        return json.dumps(s3_response)
+        return s3_response
 
 if __name__ == '__main__':
     with open('./extract/events/env.json', 'r', encoding='UTF-8') as f:
