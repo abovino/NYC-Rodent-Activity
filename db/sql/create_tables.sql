@@ -116,7 +116,7 @@ create table stg_restaurant_inspections (
 	bbl bigint,
 	nta Varchar(4),
 	location_point1 text
-)
+);
 
 -- Restaurant Violation codes
 
@@ -134,4 +134,4 @@ create table stg_violation_codes (
 	condition_3 text,
 	condition_4 text,
 	condition_5 text
-)
+);
