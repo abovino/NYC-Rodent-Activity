@@ -20,3 +20,10 @@ __pycache__/
 # Track tmp/ but ignore contents
 tmp/*
 !tmp/.gitkeep
+
+# logs
+logs/
+
+# DBT
+dwh_integration/target/
+dwh_integration/dbt_packages/
