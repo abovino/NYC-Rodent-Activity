@@ -1,3 +1,7 @@
+create database stg_nyc_rodent_tracking;
+create database dwh_nyc_rodent_tracking;
+create database mart_nyc_rodent_tracking;
+
 -- Inspections
 
 create table stg_rodent_inspections (
