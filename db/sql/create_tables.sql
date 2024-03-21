@@ -85,6 +85,38 @@ create table stg_311_service_calls (
 );
 
 -- Restaurant Inspections
+create table stg_restaurant_inspections (
+	":id"	varchar(18),
+	":created_at"	timestamp with time zone,
+	":updated_at"	timestamp with time zone,
+	":version" varchar(17),
+	dba Varchar(15),
+	boro Varchar(25),
+	building Varchar(25),
+	street Varchar(150),
+	zipcode Varchar(10,
+	phone Varchar(25),
+	cuisine_description Varchar(50),
+	inspection_date timestamp,
+	action Varchar(150),
+	violation_code Varchar(10),
+	violation_description Varchar(150),
+	critical_flag Varchar(25),
+	score smallint,
+	grade Char(1),
+	grade_date timestamp,
+	record_date timestamp,
+	inspection_type Varchar(75),
+	latitude float,
+	longitude float,
+	community_board smallint,
+	council_district smallint,
+	census_tract int,
+	bin Varchar(15),
+	bbl bigint,
+	nta Varchar(4),
+	location_point1 text
+)
 
 -- Restaurant Violation codes
 
