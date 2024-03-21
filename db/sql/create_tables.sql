@@ -29,9 +29,15 @@ create table stg_rodent_inspections (
 	council_district smallint,
 	census_tract int,
 	bin varchar(15)
-)
+);
 
 -- 311 Calls
+create table stg_311_service_calls (
+	":id"	varchar(18),
+	":created_at"	timestamp with time zone,
+	":updated_at"	timestamp with time zone,
+	":version" varchar(17),
+);
 
 -- Restaurant Inspections
 
