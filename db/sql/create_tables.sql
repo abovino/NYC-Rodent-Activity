@@ -94,7 +94,7 @@ create table stg_restaurant_inspections (
 	boro Varchar(25),
 	building Varchar(25),
 	street Varchar(150),
-	zipcode Varchar(10,
+	zipcode Varchar(10),
 	phone Varchar(25),
 	cuisine_description Varchar(50),
 	inspection_date timestamp,
