@@ -121,10 +121,6 @@ create table stg_restaurant_inspections (
 -- Restaurant Violation codes
 
 create table stg_violation_codes (
-	":id"	varchar(18),
-	":created_at"	timestamp with time zone,
-	":updated_at"	timestamp with time zone,
-	":version" varchar(17),
 	violation_code varchar(5),
 	health_code varchar(50),
 	violation_summary text,
