@@ -46,33 +46,33 @@ create table stg_311_service_calls (
 	closed_date timestamp,
 	agency Varchar(10),
 	agency_name Varchar(100),
-	complaint_type Varchar(30),
-	descriptor Varchar(50),
+	complaint_type varchar(50),
+	descriptor Varchar(100),
 	location_type Varchar(50),
-	incident_zip Varchar(20),
-	incident_address Varchar(75),
-	street_name Varchar(50),
-	cross_street_1 Varchar(50),
-	cross_street_2 Varchar(50),
-	intersection_street_1 Varchar(50),
-	intersection_street_2 Varchar(50),
+	incident_zip Varchar(5),
+	incident_address Varchar(150),
+	street_name Varchar(150),
+	cross_street_1 Varchar(150),
+	cross_street_2 Varchar(150),
+	intersection_street_1 Varchar(150),
+	intersection_street_2 Varchar(150),
 	address_type Varchar(15),
-	city Varchar(30),
+	city varchar(50),
 	landmark Varchar(50),
 	facility_type Varchar(50),
 	status Varchar(15),
 	due_date timestamp,
 	resolution_description text,
 	resolution_action_updated_date timestamp,
-	community_board Varchar(30),
+	community_board Varchar(50),
 	bbl bigint,
 	borough Varchar(15),
 	x_coordinate_state_plane int,
 	y_coordinate_state_plane int,
 	open_data_channel_type Varchar(10),
-	park_facility_name Varchar(50),
+	park_facility_name Varchar(150),
 	park_borough Varchar(15),
-	vehicle_type Varchar(15),
+	vehicle_type Varchar(50),
 	taxi_company_borough Varchar(15),
 	taxi_pick_up_location Varchar(150),
 	bridge_highway_name Varchar(150),
@@ -81,7 +81,7 @@ create table stg_311_service_calls (
 	bridge_highway_segment Varchar(250),
 	latitude float,
 	longitude float,
-	location Varchar(50)
+	location Varchar(150)
 );
 
 -- Restaurant Inspections
@@ -116,7 +116,7 @@ create table stg_restaurant_inspections (
 	bbl bigint,
 	nta Varchar(4),
 	location_point1 text
-);
+)
 
 -- Restaurant Violation codes
 
@@ -134,4 +134,4 @@ create table stg_violation_codes (
 	condition_3 text,
 	condition_4 text,
 	condition_5 text
-);
+)
