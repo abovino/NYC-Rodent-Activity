@@ -17,7 +17,7 @@ def validate_keys(event: dict) -> dict:
         'API_TOKEN',
         'S3_BUCKET',
         'S3_REGION',
-        'S3_OBJ_PATH',
+        'S3_SUB_DIR',
     ]
     for key in required_keys:
         if key not in event:
