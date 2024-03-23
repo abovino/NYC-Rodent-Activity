@@ -128,21 +128,21 @@ class Extract:
         except IOError as e:
             print(e)
 
-    def upload_to_s3(self, region: str, bucket: str, obj_dir: str) -> dict:
+    def upload_to_s3(self, region: str, bucket: str, sub_dir: str) -> dict:
         """Uploads CSV data to S3 bucket.
 
         Args:
             region (str): AWS region for S3 bucket.
             bucket (str): S3 bucket upload destination.
-            obj_dir (str): Obj key path for upload
+            sub_dir (str): S3 bucket sub directory for upload
 
         Returns:
             dict: Contains respose data from S3, or error data in JSON format
         """
         self._file.seek(0)
         contents = self._file.read()
-        file_nm = os.path.basename(self._file.name)
-        obj_key = f'{obj_dir}/{file_nm}'
+        file_nm = sub_dir + '_' + os.path.basename(self._file.name)
+        obj_key = self._generate_partitioned_path(sub_dir, file_nm)
         retry_strategy = {'total_max_attempts': 3, 'mode': 'standard'}
         config = Config(region_name=region, retries=retry_strategy)
 
@@ -179,3 +179,19 @@ class Extract:
             'body': body
         }
         return res
+
+    def _generate_partitioned_path(self, sub_dir: str, file_nm: str) -> str:
+        """Generates a year=YYYY/month=MM/day=DD paritioned path for S3 file upload.
+
+        Args:
+            sub_dir (str): Sub directory of S3 bucket to save paritioned file.
+            file_nm (str): name of file to be uploaded to S3.
+
+        Returns:
+            str: partitioned S3 path
+        """
+        year, month, day = map(str, self._query_date.split('-'))
+        obj_key_path = os.path.join(
+            'input', sub_dir, f"year={year}", f"month={month}", f"day={day}", file_nm
+        )
+        return obj_key_path
