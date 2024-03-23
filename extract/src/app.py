@@ -27,7 +27,7 @@ def extract(event, context) -> dict:
     API_TOKEN = event['API_TOKEN']
     S3_BUCKET = event['S3_BUCKET']
     S3_REGION = event['S3_REGION']
-    S3_OBJ_PATH = event['S3_OBJ_PATH']
+    S3_SUB_DIR = event['S3_SUB_DIR']
     BASE_URL = f'https://data.cityofnewyork.us/resource/{API_RESOURCE_CODE}.csv?'
 
     with Extract(QUERY_DATE, TMP_DIR) as client:
@@ -42,7 +42,7 @@ def extract(event, context) -> dict:
 
             offset += limit
 
-        s3_response = client.upload_to_s3(S3_REGION, S3_BUCKET, S3_OBJ_PATH)
+        s3_response = client.upload_to_s3(S3_REGION, S3_BUCKET, S3_SUB_DIR)
 
         return s3_response
 
