@@ -6,8 +6,9 @@ Classes:
 """
 import csv
 import os
+import json
 from datetime import datetime, timedelta
-from typing import ByteString
+from typing import Any
 
 import boto3
 from botocore.config import Config
@@ -30,7 +31,7 @@ class Extract:
         self._write_headers = True
         self._query_date = query_date
         self._tmp_dir = tmp_dir
-        self._tmp_output = os.path.join(self._tmp_dir, f'{self._query_date}.csv')
+        self._tmp_output = os.path.join(self._tmp_dir, f'{self._query_date}.json')
 
     def __enter__(self):
         self._session = Session()
@@ -41,15 +42,8 @@ class Extract:
         self._session.close()
         self._file.close()
 
-    def fetch_csv_data(
-        self,
-        url: str,
-        token: str,
-        limit: int,
-        offset: int,
-        timeout=10,
-        retries=3
-    ) -> ByteString:
+    
+    def get_json(self, url: str, token: str, limit: int, offset: int, timeout=10, retries=3) -> list[dict[str, Any]]:
         """Sends GET request to download data for given date.
 
         Args:
@@ -61,7 +55,7 @@ class Extract:
             retries (int, optional): Number of retry requests to attempt. Defaults to 3.
 
         Returns:
-            ByteString: A byte string of CSV data.
+            list[dict[str, Any]]: A JSONified list.
         """
         cols = '*,:id,:created_at,:updated_at,:version'
         headers = {'X-App-Token': token}
@@ -91,57 +85,27 @@ class Extract:
         try:
             response = self._session.get(url, params=params, headers=headers, timeout=timeout)
             response.raise_for_status()
-            return response.content
+            return response.json()
         except RequestException as e:
-            print(e)
-            raise
+            raise RuntimeError(f"Failed to fetch data from {url}") from e
 
-    def save_csv_data(self, data: ByteString) -> int:
-        """Saves CSV data to the local file system.
 
-        Args:
-            data (ByteString): ByteString containing CSV data.
-            file_path (str): The path and filename to be written to.
-
-        Returns:
-            int: Number of rows in CSV file.  Used to determine offset for paginated API requests.
-        """
-        row_count = 0
-        try:
-            decoded = data.decode('UTF-8')
-            writer = csv.writer(self._file, quotechar='"', quoting=csv.QUOTE_ALL)
-            reader = csv.reader(decoded.splitlines(), delimiter=',', quoting=csv.QUOTE_ALL)
-            field_names = next(reader, None)
-
-            if self._write_headers:
-                writer.writerow(field_names)
-                self._write_headers = False
-
-            for row in reader:
-                writer.writerow(row)
-                row_count += 1
-
-            return row_count
-
-        except FileNotFoundError as e:
-            print(e)
-        except IOError as e:
-            print(e)
-
-    def upload_to_s3(self, region: str, bucket: str, sub_dir: str) -> dict:
-        """Uploads CSV data to S3 bucket.
+    def upload_to_s3(self, data: list[dict[str, Any]], region: str, bucket: str, sub_dir: str, aws_sso_profile: str) -> dict:
+        """Uploads JSON data to S3 bucket.
 
         Args:
+            data (list[dict[str, Any]]): API JSON response
             region (str): AWS region for S3 bucket.
             bucket (str): S3 bucket upload destination.
             sub_dir (str): S3 bucket sub directory for upload
+            aws_sso_profile (str): SSO Profile to use for Boto3 authentication
 
         Returns:
             dict: Contains respose data from S3, or error data in JSON format
         """
-        self._file.seek(0)
-        contents = self._file.read()
-        file_nm = sub_dir + '_' + os.path.basename(self._file.name)
+        json_bytes = json.dumps(data).encode("utf-8")
+        timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+        file_nm = sub_dir + '_' + timestamp + os.path.basename(self._file.name)
         obj_key = self._generate_partitioned_path(sub_dir, file_nm)
         retry_strategy = {'total_max_attempts': 3, 'mode': 'standard'}
         config = Config(region_name=region, retries=retry_strategy)
@@ -149,18 +113,37 @@ class Extract:
         try:
             session = boto3.Session(profile_name="dev")
             client = session.client('s3', config=config)
-            response = client.put_object(Body=contents, Bucket=bucket, Key=obj_key)
-
+            response = client.put_object(Body=json_bytes, Bucket=bucket, Key=obj_key, ContentType="application/json")
             status_code = response['ResponseMetadata']['HTTPStatusCode']
             response_body = {'message': 'File uploaded successfully'}
             response = self._format_lambda_response(status_code, response_body)
-
             return response
+        
         except ClientError as e:
             status_code = e.response['ResponseMetadata']['HTTPStatusCode']
             response_body = {'error': e.response['Error']['Message']}
             err_response = self._format_lambda_response(status_code, response_body)
             return err_response
+
+    def _format_lambda_response(self, status_code: int, body: dict) -> dict:
+        """Formats the response for the AWS Lambda Function.
+
+        Args:
+            status_code (int): Status code to send to the client.
+            body (dict): Response body to send to the client.
+
+        Returns:
+            dict: HTTP status code, headers, and body
+        """
+        res = {
+            'statusCode': status_code,
+            'headers': {
+                'Content-Type': 'application/json',
+            },
+            'body': body
+        }
+        return res
+
 
     def _format_lambda_response(self, status_code: int, body: dict) -> dict:
         """Formats the response for the AWS Lambda Function.
@@ -191,8 +174,8 @@ class Extract:
         Returns:
             str: partitioned S3 path
         """
-        year, month, day = map(str, self._query_date.split('-'))
-        obj_key_path = os.path.join(
-            sub_dir, f"year={year}", f"month={month}", f"day={day}", file_nm
+        year, month, day = self._query_date.split('-')
+        obj_key_path = (
+            f"{sub_dir}/raw/year={year}/month={month}/day={day}/{file_nm}"
         )
         return obj_key_path
