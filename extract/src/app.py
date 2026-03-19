@@ -28,21 +28,21 @@ def extract(event, context) -> dict:
     S3_BUCKET = event['S3_BUCKET']
     S3_REGION = event['S3_REGION']
     S3_SUB_DIR = event['S3_SUB_DIR']
-    BASE_URL = f'https://data.cityofnewyork.us/resource/{API_RESOURCE_CODE}.csv?'
+    AWS_SSO_PROFILE = event['AWS_SSO_PROFILE']
+    BASE_URL = f'https://data.cityofnewyork.us/resource/{API_RESOURCE_CODE}.json?'
 
     with Extract(QUERY_DATE, TMP_DIR) as client:
         limit = 50000
         offset = 0
         while True:
-            data = client.fetch_csv_data(BASE_URL, API_TOKEN, limit, offset)
-            row_count = client.save_csv_data(data)
-
-            if row_count < limit:
+            data = client.get_json(BASE_URL, API_TOKEN, limit, offset)
+            record_count = len(data)
+            s3_response = client.upload_to_s3(data, S3_REGION, S3_BUCKET, S3_SUB_DIR, AWS_SSO_PROFILE)
+            
+            if record_count < limit:
                 break
 
             offset += limit
-
-        s3_response = client.upload_to_s3(S3_REGION, S3_BUCKET, S3_SUB_DIR)
 
         return s3_response
 
