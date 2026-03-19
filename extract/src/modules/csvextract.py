@@ -147,7 +147,8 @@ class Extract:
         config = Config(region_name=region, retries=retry_strategy)
 
         try:
-            client = boto3.client('s3', config=config)
+            session = boto3.Session(profile_name="dev")
+            client = session.client('s3', config=config)
             response = client.put_object(Body=contents, Bucket=bucket, Key=obj_key)
 
             status_code = response['ResponseMetadata']['HTTPStatusCode']
@@ -192,6 +193,6 @@ class Extract:
         """
         year, month, day = map(str, self._query_date.split('-'))
         obj_key_path = os.path.join(
-            'input', sub_dir, f"year={year}", f"month={month}", f"day={day}", file_nm
+            sub_dir, f"year={year}", f"month={month}", f"day={day}", file_nm
         )
         return obj_key_path
