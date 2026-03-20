@@ -11,5 +11,6 @@
     aws lambda invoke --function-name <lambda-func-name> --payload fileb://path/to/payload.json response.json
 
     ToDo:
+        - Setup "keys" so that EventBridge can pass params, hide secret keys (Make env variables)
         - Make the Lambda function/API requests more dynamic so a date range can be passed
         - Handle status_code/response_body in S3Uploader.upload_json()
