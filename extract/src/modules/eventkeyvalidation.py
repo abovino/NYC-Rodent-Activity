@@ -18,6 +18,7 @@ def validate_keys(event: dict) -> dict:
         'S3_BUCKET',
         'S3_REGION',
         'S3_SUB_DIR',
+        'AWS_SSO_PROFILE',
     ]
     for key in required_keys:
         if key not in event:
