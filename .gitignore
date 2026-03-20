@@ -27,3 +27,6 @@ logs/
 # DBT
 dwh_integration/target/
 dwh_integration/dbt_packages/
+
+# Payload tests
+payload.json

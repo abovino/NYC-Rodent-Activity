@@ -1,11 +1,10 @@
 """AWS Lambda function to get CSV data from NYC Open Data API and upload to S3 Bucket"""
-import os
 import json
 
-from modules.csvextract import Extract
+from modules.api_extract_client import PaginatedAPIClient
+from modules.s3_uploader import S3Uploader
 from modules.eventkeyvalidation import validate_keys
 
-TMP_DIR = os.environ['TMP_DIR']
 
 def extract(event, context) -> dict:
     """AWS Lambda function entry point.
@@ -28,23 +27,43 @@ def extract(event, context) -> dict:
     S3_BUCKET = event['S3_BUCKET']
     S3_REGION = event['S3_REGION']
     S3_SUB_DIR = event['S3_SUB_DIR']
-    BASE_URL = f'https://data.cityofnewyork.us/resource/{API_RESOURCE_CODE}.csv?'
+    AWS_SSO_PROFILE = event['AWS_SSO_PROFILE']
+    BASE_URL = f'https://data.cityofnewyork.us/resource/{API_RESOURCE_CODE}.json?'
 
-    with Extract(QUERY_DATE, TMP_DIR) as client:
+    uploader = S3Uploader(
+        region=S3_REGION,
+        bucket=S3_BUCKET,
+        sub_dir=S3_SUB_DIR,
+        aws_sso_profile=AWS_SSO_PROFILE,
+    )
+
+    files_uploaded = 0
+    last_s3_response = None
+
+    with PaginatedAPIClient(base_url=BASE_URL, api_token=API_TOKEN) as client:
         limit = 50000
         offset = 0
-        while True:
-            data = client.fetch_csv_data(BASE_URL, API_TOKEN, limit, offset)
-            row_count = client.save_csv_data(data)
 
-            if row_count < limit:
+        while True:
+            data = client.get_json_batch(QUERY_DATE, limit, offset)
+
+            if not data:
+                break
+
+            last_s3_response = uploader.upload_json(data, QUERY_DATE)
+            files_uploaded += 1
+            record_count = len(data)
+
+            if record_count < limit:
                 break
 
             offset += limit
+        
+        if files_uploaded == 0:
+            raise ValueError("API returned no data")
+        
+        return last_s3_response
 
-        s3_response = client.upload_to_s3(S3_REGION, S3_BUCKET, S3_SUB_DIR)
-
-        return s3_response
 
 if __name__ == '__main__':
     with open('./extract/events/env.json', 'r', encoding='UTF-8') as f:
