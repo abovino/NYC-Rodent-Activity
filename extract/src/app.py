@@ -7,15 +7,6 @@ from modules.eventkeyvalidation import validate_keys
 
 
 def extract(event, context) -> dict:
-    """AWS Lambda function entry point.
-
-    Args:
-        event (dict): Contains parameters for making API request.
-        context (dict): Provides info about invocation, function, and execution environment
-
-    Returns:
-        Dict[str, Any]: Returns a JSON-like dict with str key and Any value.
-    """
     err_response = validate_keys(event)
 
     if err_response:
