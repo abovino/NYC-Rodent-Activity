@@ -12,14 +12,20 @@ Resources:
     Properties:
       FunctionName: nyc-open-data-extract
       CodeUri: src/
-      Handler: app.extract
+      Handler: app.lambda_handler
       Runtime: python3.14
       Architectures:
       - x86_64
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref S3DestBucket
+      Environment:
+        Variables:
+          S3_DEST_BUCKET: !Ref S3DestBucket
+          S3_REGION: !Ref S3Region
 
 Parameters:
   S3DestBucket:
+    Type: String
+  S3Region:
     Type: String
