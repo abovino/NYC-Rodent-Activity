@@ -7,9 +7,10 @@ Globals:
     Timeout: 300
     MemorySize: 512
 Resources:
-  ExtractCSVData:
+  RodentActivityExtractFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: nyc-open-data-extract
       CodeUri: src/
       Handler: app.extract
       Runtime: python3.14
@@ -17,7 +18,7 @@ Resources:
       - x86_64
       Policies:
         - S3CrudPolicy:
-            BucketName: !Sub ${S3DestBucket}
+            BucketName: !Ref S3DestBucket
 
 Parameters:
   S3DestBucket:
