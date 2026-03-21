@@ -2,10 +2,10 @@
 import os
 import json
 
-from src.modules.api_extract_client import PaginatedAPIClient
-from src.modules.s3_uploader import S3Uploader
-from src.modules.env_variable_validation import get_required_env
-from src.modules.event_key_validation import validate_event_keys
+from modules.api_extract_client import PaginatedAPIClient
+from modules.s3_uploader import S3Uploader
+from modules.env_variable_validation import get_required_env
+from modules.event_key_validation import validate_event_keys
 
 
 def lambda_handler(event, context) -> dict:
