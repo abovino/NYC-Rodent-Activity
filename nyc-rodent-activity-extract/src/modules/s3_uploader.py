@@ -4,7 +4,7 @@ Classes:
 """
 import json
 import boto3
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from typing import Any
 from botocore.config import Config
 from botocore.exceptions import ClientError
@@ -14,51 +14,54 @@ class S3Uploader:
         region: str,
         bucket: str,
         sub_dir: str,
-        aws_sso_profile: str,
+        aws_sso_profile: str | None = None,
     ) -> None:
         self._region = region
         self._bucket = bucket
         self._sub_dir = sub_dir
-        self._aws_sso_profile = aws_sso_profile
+
+        retry_strategy = {"total_max_attempts": 3, "mode": "standard"}
+        config = Config(region_name=self._region, retries=retry_strategy)
+
+        if aws_sso_profile:
+            session = boto3.Session(profile_name=aws_sso_profile)
+            self._client = session.client("s3", config=config)
+        else:
+            self._client = boto3.client("s3", config=config)
+    
 
     def upload_json(self, data: list[dict], query_date: str) -> dict:
         """Uploads JSON data to S3 bucket.
 
         Args:
-            data (list[dict[str, Any]]): API JSON response
-            region (str): AWS region for S3 bucket.
-            bucket (str): S3 bucket upload destination.
-            sub_dir (str): S3 bucket sub directory for upload
-            aws_sso_profile (str): SSO Profile to use for Boto3 authentication
+            data (list[dict]): API JSON response
+            query_date (str)
 
         Returns:
-            dict: Contains respose data from S3, or error data in JSON format
+            dict: Contains response data from S3
         """
-        retry_strategy = {'total_max_attempts': 3, 'mode': 'standard'}
-        config = Config(region_name=self._region, retries=retry_strategy)
         json_bytes = json.dumps(data).encode("utf-8")
         obj_key = self._create_partitioned_obj_key(query_date)
 
         try:
-            session = boto3.Session(profile_name=self._aws_sso_profile)
-            client = session.client('s3', config=config)
-            response = client.put_object(
+            response = self._client.put_object(
                 Body=json_bytes,
                 Bucket=self._bucket,
                 Key=obj_key,
-                ContentType="application/json"
+                ContentType="application/json",
             )
-            status_code = response['ResponseMetadata']['HTTPStatusCode']
-            response_body = {'message': 'Files uploaded successfully'}
-            response = self._format_lambda_response(status_code, response_body)
-            return response
-        
         except ClientError as e:
-            status_code = e.response['ResponseMetadata']['HTTPStatusCode']
-            response_body = {'error': e.response['Error']['Message']}
-            err_response = self._format_lambda_response(status_code, response_body)
-            return err_response
-        return
+            message = e.response["Error"]["Message"]
+            raise RuntimeError(
+                f"Failed to upload s3://{self._bucket}/{obj_key}: {message}"
+            ) from e
+
+        return {
+            "bucket": self._bucket,
+            "key": obj_key,
+            "status_code": response["ResponseMetadata"]["HTTPStatusCode"],
+            "record_count": len(data),
+        }
     
 
     def _create_partitioned_obj_key(self, query_date: str) -> str:
@@ -72,26 +75,9 @@ class S3Uploader:
         """
         upload_date = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         file_nm = f"{self._sub_dir}_extract_{query_date}_upload_{upload_date}.json"
-        year, month, day = query_date.split('-')
+        dt = datetime.strptime(query_date, "%Y-%m-%d")
+        year = dt.strftime("%Y")
+        month = dt.strftime("%m")
+        day = dt.strftime("%d")
         obj_key = f"{self._sub_dir}/raw/year={year}/month={month}/day={day}/{file_nm}"
         return obj_key
-    
-
-    def _format_lambda_response(self, status_code: int, body: dict) -> dict:
-        """Formats the response for the AWS Lambda Function.
-
-        Args:
-            status_code (int): Status code to send to the client.
-            body (dict): Response body to send to the client.
-
-        Returns:
-            dict: HTTP status code, headers, and body
-        """
-        res = {
-            'statusCode': status_code,
-            'headers': {
-                'Content-Type': 'application/json',
-            },
-            'body': body
-        }
-        return res
