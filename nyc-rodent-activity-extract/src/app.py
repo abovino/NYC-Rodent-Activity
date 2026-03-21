@@ -6,7 +6,7 @@ from modules.s3_uploader import S3Uploader
 from modules.eventkeyvalidation import validate_keys
 
 
-def extract(event, context) -> dict:
+def lambda_handler(event, context) -> dict:
     err_response = validate_keys(event)
 
     if err_response:
@@ -59,4 +59,4 @@ def extract(event, context) -> dict:
 if __name__ == '__main__':
     with open('./extract/events/env.json', 'r', encoding='UTF-8') as f:
         test_event = json.load(f)
-        s3_res = extract(test_event, context={})
+        s3_res = lambda_handler(test_event, context={})
