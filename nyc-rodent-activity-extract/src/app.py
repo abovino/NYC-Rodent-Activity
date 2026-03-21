@@ -1,29 +1,33 @@
 """AWS Lambda function to get CSV data from NYC Open Data API and upload to S3 Bucket"""
+import os
 import json
 
 from modules.api_extract_client import PaginatedAPIClient
 from modules.s3_uploader import S3Uploader
-from modules.eventkeyvalidation import validate_keys
+from modules.env_variable_validation import get_required_env
+from modules.event_key_validation import validate_event_keys
 
 
 def lambda_handler(event, context) -> dict:
-    err_response = validate_keys(event)
+    S3_DEST_BUCKET = get_required_env('S3_DEST_BUCKET')
+    S3_REGION = get_required_env('S3_REGION')
+    AWS_SSO_PROFILE = os.getenv('AWS_SSO_PROFILE')
+    
+    err_response = validate_event_keys(event)
 
     if err_response:
         return err_response
+    
 
     API_RESOURCE_CODE = event['API_RESOURCE_CODE']
     QUERY_DATE = event['QUERY_DATE']
     API_TOKEN = event['API_TOKEN']
-    S3_BUCKET = event['S3_BUCKET']
-    S3_REGION = event['S3_REGION']
     S3_SUB_DIR = event['S3_SUB_DIR']
-    AWS_SSO_PROFILE = event['AWS_SSO_PROFILE']
     BASE_URL = f'https://data.cityofnewyork.us/resource/{API_RESOURCE_CODE}.json?'
 
     uploader = S3Uploader(
         region=S3_REGION,
-        bucket=S3_BUCKET,
+        bucket=S3_DEST_BUCKET,
         sub_dir=S3_SUB_DIR,
         aws_sso_profile=AWS_SSO_PROFILE,
     )
@@ -57,6 +61,6 @@ def lambda_handler(event, context) -> dict:
 
 
 if __name__ == '__main__':
-    with open('./extract/events/env.json', 'r', encoding='UTF-8') as f:
+    with open('./nyc-rodent-activity-extract/events/env.json', 'r', encoding='UTF-8') as f:
         test_event = json.load(f)
         s3_res = lambda_handler(test_event, context={})
