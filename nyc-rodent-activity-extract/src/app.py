@@ -58,9 +58,3 @@ def lambda_handler(event, context) -> dict:
             raise ValueError("API returned no data")
         
         return last_s3_response
-
-
-if __name__ == '__main__':
-    with open('./nyc-rodent-activity-extract/events/env.json', 'r', encoding='UTF-8') as f:
-        test_event = json.load(f)
-        s3_res = lambda_handler(test_event, context={})
