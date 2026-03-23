@@ -6,7 +6,10 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-env.json
+
+# Events
+/nyc-rodent-activity-extract/events/*
+!nyc-rodent-activity-extract/events/sample-env.json
 
 # AWS SAM Builds
 .aws-sam/
