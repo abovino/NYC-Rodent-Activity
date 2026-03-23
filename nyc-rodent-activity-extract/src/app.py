@@ -6,6 +6,7 @@ from modules.api_extract_client import PaginatedAPIClient
 from modules.s3_uploader import S3Uploader
 from modules.env_variable_validation import get_required_env
 from modules.event_key_validation import validate_event_keys
+from modules.query_dates import resolve_query_dates, process_date
 
 
 def lambda_handler(event, context) -> dict:
@@ -25,6 +26,8 @@ def lambda_handler(event, context) -> dict:
     S3_SUB_DIR = event['S3_SUB_DIR']
     BASE_URL = f'https://data.cityofnewyork.us/resource/{API_RESOURCE_CODE}.json?'
 
+    query_dates = resolve_query_dates(event)
+
     uploader = S3Uploader(
         region=S3_REGION,
         bucket=S3_DEST_BUCKET,
@@ -32,29 +35,19 @@ def lambda_handler(event, context) -> dict:
         aws_sso_profile=AWS_SSO_PROFILE,
     )
 
-    files_uploaded = 0
-    last_s3_response = None
+    results = []
 
     with PaginatedAPIClient(base_url=BASE_URL, api_token=API_TOKEN) as client:
-        limit = 50000
-        offset = 0
+        for query_date in query_dates:
+            result = process_date(
+                client=client,
+                uploader=uploader,
+                query_date=query_date,
+            )
+            results.append(result)
 
-        while True:
-            data = client.get_json_batch(QUERY_DATE, limit, offset)
+    return {
+        "processed_dates": query_date,
+        "results": results,
+    }
 
-            if not data:
-                break
-
-            last_s3_response = uploader.upload_json(data, QUERY_DATE)
-            files_uploaded += 1
-            record_count = len(data)
-
-            if record_count < limit:
-                break
-
-            offset += limit
-        
-        if files_uploaded == 0:
-            raise ValueError("API returned no data")
-        
-        return last_s3_response
