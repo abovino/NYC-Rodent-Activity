@@ -16,7 +16,7 @@ class PaginatedAPIClient:
         
 
     def __enter__(self):
-        headers = {'X-App-Token': self._api_token}
+        headers = {"X-App-Token": self._api_token}
         self._retry_strategy = Retry(
             total=3,
             backoff_factor=1.0,
@@ -46,20 +46,19 @@ class PaginatedAPIClient:
         Returns:
             list[dict[str, Any]]: A JSONified list.
         """
-        cols = '*,:id,:created_at,:updated_at,:version'
         start = query_date
-        end = (datetime.strptime(start, '%Y-%m-%d')
-            + timedelta(days=1)).strftime('%Y-%m-%d')
+        end = (datetime.strptime(start, "%Y-%m-%d")
+            + timedelta(days=1)).strftime("%Y-%m-%d")
         where = (
             f":created_at BETWEEN '{start}' AND '{end}' "
             f"OR :updated_at BETWEEN '{start}' AND '{end}'"
         )
         params = {
-            '$select': cols,
-            '$where': where,
-            '$limit': limit,
-            '$offset': offset,
-            '$order': ':id'
+            "$where": where,
+            "$limit": limit,
+            "$offset": offset,
+            "$order": ":id",
+            "$$exclude_system_fields=false": "false",
         }
         try:
             response = self._session.get(self._base_url, params=params, timeout=timeout)
