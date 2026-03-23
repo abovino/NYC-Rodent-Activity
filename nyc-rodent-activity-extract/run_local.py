@@ -8,7 +8,7 @@ SRC_DIR = BASE_DIR / "src"
 
 sys.path.insert(0, str(SRC_DIR))
 
-from app import lambda_handler
+from src.app import lambda_handler
 
 
 def parse_args() -> argparse.Namespace:
