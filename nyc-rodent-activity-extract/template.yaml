@@ -23,9 +23,12 @@ Resources:
         Variables:
           S3_DEST_BUCKET: !Ref S3DestBucket
           S3_REGION: !Ref S3Region
+          API_TOKEN: !Ref ApiToken
 
 Parameters:
   S3DestBucket:
     Type: String
   S3Region:
+    Type: String
+  ApiToken:
     Type: String
