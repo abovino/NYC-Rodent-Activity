@@ -39,30 +39,46 @@ class PaginatedAPIClient:
         """Sends GET request to download data for given date.
 
         Args:
+            query_date (str): Date in YYYY-MM-DD format.
             limit (int): Max number of rows returned for each request.
             offset (int): Used to paginate the requests.
-            timeout (int, optional): Time in seconds for the connection to timeout. Defaults to 10.
+            timeout (int, optional): Time in seconds for the connection to timeout.
 
         Returns:
-            list[dict[str, Any]]: A JSONified list.
+            list[dict[str, Any]]: Parsed JSON response.
         """
-        start = query_date
-        end = (datetime.strptime(start, "%Y-%m-%d")
-            + timedelta(days=1)).strftime("%Y-%m-%d")
-        where = (
-            f":created_at BETWEEN '{start}' AND '{end}' "
-            f"OR :updated_at BETWEEN '{start}' AND '{end}'"
-        )
+        where = self._build_query_where_clause(query_date)
         params = {
             "$where": where,
             "$limit": limit,
             "$offset": offset,
             "$order": ":id",
-            "$$exclude_system_fields=false": "false",
+            "$$exclude_system_fields": "false",
         }
         try:
-            response = self._session.get(self._base_url, params=params, timeout=timeout)
+            response = self._session.get(
+                self._base_url,
+                params=params,
+                timeout=timeout
+            )
             response.raise_for_status()
             return response.json()
         except RequestException as e:
             raise RuntimeError(f"Failed to fetch data from {self._base_url}") from e
+        
+
+    def _build_query_where_clause(self, query_date: str) -> str:
+        start_dt = datetime.strptime(query_date, "%Y-%m-%d")
+        end_dt = start_dt + timedelta(days=1)
+
+        start_ts = start_dt.strftime("%Y-%m-%dT00:00:00")
+        end_ts = end_dt.strftime("%Y-%m-%dT00:00:00")
+
+        where_clause = (
+            f"(:created_at >= '{start_ts}' AND :created_at < '{end_ts}') "
+            f"OR "
+            f"(:updated_at >= '{start_ts}' AND :updated_at < '{end_ts}')"
+        )
+
+        return where_clause
+
