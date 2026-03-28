@@ -1,30 +1,21 @@
-"""AWS Lambda function to get CSV data from NYC Open Data API and upload to S3 Bucket"""
+"""AWS Lambda function to get JSON data from NYC Open Data API and upload to S3 Bucket"""
 import os
 import json
 
 from modules.api_extract_client import PaginatedAPIClient
 from modules.s3_uploader import S3Uploader
 from modules.env_variable_validation import get_required_env
-from modules.event_key_validation import validate_event_keys
 from modules.query_dates import resolve_query_dates, process_date
 
 
 def lambda_handler(event, context) -> dict:
     S3_DEST_BUCKET = get_required_env('S3_DEST_BUCKET')
     S3_REGION = get_required_env('S3_REGION')
+    API_TOKEN = get_required_env('API_TOKEN')
     AWS_SSO_PROFILE = os.getenv('AWS_SSO_PROFILE')
-    
-    err_response = validate_event_keys(event)
-
-    if err_response:
-        return err_response
-    
-
     API_RESOURCE_CODE = event['API_RESOURCE_CODE']
-    QUERY_DATE = event['QUERY_DATE']
-    API_TOKEN = event['API_TOKEN']
     S3_SUB_DIR = event['S3_SUB_DIR']
-    BASE_URL = f'https://data.cityofnewyork.us/resource/{API_RESOURCE_CODE}.json?'
+    BASE_URL = f'https://data.cityofnewyork.us/resource/{API_RESOURCE_CODE}.json'
 
     query_dates = resolve_query_dates(event)
 
@@ -47,7 +38,7 @@ def lambda_handler(event, context) -> dict:
             results.append(result)
 
     return {
-        "processed_dates": query_date,
+        "processed_dates": query_dates,
         "results": results,
     }
 
