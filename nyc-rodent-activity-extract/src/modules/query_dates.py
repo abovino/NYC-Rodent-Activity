@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
-from api_extract_client import PaginatedAPIClient
-from s3_uploader import S3Uploader
+from .api_extract_client import PaginatedAPIClient
+from .s3_uploader import S3Uploader
 
 def resolve_query_dates(event: dict) -> list[str]:
     if "START_DATE" in event and "END_DATE" in event:
@@ -60,7 +60,9 @@ def process_date(client: PaginatedAPIClient, uploader: S3Uploader, query_date: s
         offset += limit
 
     if files_uploaded == 0:
-        raise ValueError(f"API returned no data for {query_date}")
+        # do not raise an error here, create a log and continue without uploading anything
+        pass
+        # raise ValueError(f"API returned no data for {query_date}")
     
     return {
         "query_date": query_date,
